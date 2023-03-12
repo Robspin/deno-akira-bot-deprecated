@@ -1,13 +1,15 @@
 import { config as env } from "https://deno.land/std@0.158.0/dotenv/mod.ts"
 import { BitfinexClient } from "../clients/bitfinex.ts"
-import { getStrategyInfo, getOpenPosition, createTimeString } from "./helpers.ts"
+import { getStrategyInfo, getOpenPosition, getMarginBalance, createTimeString } from "./helpers.ts"
 
 export const VARIABLES = await env()
 
 const exchangeClient = new BitfinexClient(VARIABLES.BITFINEX_API_KEY, VARIABLES.BITFINEX_API_SECRET)
 
 export const runStrategy = async () => {
-    const { fractals, signalDetails, signal } = await getStrategyInfo()
+    const { fractals, signalDetails } = await getStrategyInfo()
+
+    const signal = 'LONG'
 
     const hasOpenPosition = await getOpenPosition(exchangeClient)
 
@@ -22,30 +24,22 @@ export const runStrategy = async () => {
         return
     }
 
-    console.log(`${createTimeString()}: ${signal} signal!`)
+    console.log(`${createTimeString()}: ${signal.toLowerCase()} signal!`)
 
     const risk = Number(VARIABLES.STRATEGY_RISK_PERCENTAGE) / 100
-    const accountBalance = 0
+    const accountBalance = await getMarginBalance(exchangeClient)
     const sizeInDollars = Number((risk * accountBalance).toFixed(2))
+
+    switch (signal) {
+        case 'LONG':
+            // enter long position
+            // set stoploss
+            break
+        // case 'SHORT':
+        //     // enter short position
+        //     // set stoploss
+        //     break
+    }
+    console.log(`${createTimeString()}: entered ${signal.toLowerCase()} position...`)
 }
 
-//     const risk = Number(VARIABLES.STRATEGY_RISK_PERCENTAGE) / 100
-//     const accountBalance = await exchange.getAccountBalance()
-//     const sizeInDollars = Number((risk * accountBalance).toFixed(2))
-//
-//     switch (signal) {
-//         case 'LONG':
-//             const longRes = await exchange.openPosition('buy', sizeInDollars)
-//             if (!longRes.success) return
-//             await exchange.placeStopLoss(fractals)
-//             break
-//         case 'SHORT':
-//             const shortRes = await exchange.openPosition('sell', sizeInDollars)
-//             if (!shortRes.success) return
-//             await exchange.placeStopLoss(fractals)
-//     }
-//
-//     console.log(`
-//     Entered ${signal} position`)
-//
-// }

@@ -13,15 +13,26 @@ export const getStrategyInfo = async () => {
     return { fractals, signal, signalDetails }
 }
 
-export const getOpenPosition = async (exchangeClient: BitfinexInstance) => {
+export const getOpenPosition = async (exchangeClient: BitfinexInstance): Promise<boolean> => {
     let hasOpenPosition = false
-    const positions: any[] = await exchangeClient.bitfinexApiPost('v2/auth/r/positions')
-    if (positions.length > 0) hasOpenPosition = true
+    try {
+        const positions: any[] = await exchangeClient.bitfinexApiPost('v2/auth/r/positions')
+        if (positions.length > 0) hasOpenPosition = true
+    } catch (e) {
+        console.log(e)
+    }
     return hasOpenPosition
 }
 
-export const createTimeString = () => new Date().toISOString().slice(0, -5)
+export const createTimeString = (): string => new Date().toISOString().slice(0, -5)
 
-export const getMarginBalance = async (exchangeClient: BitfinexInstance) => {
-    const marginBalance = await exchangeClient.bitfinexApiPost('v2/auth/r/info/margin/base')
+export const getMarginBalance = async (exchangeClient: BitfinexInstance): Promise<number> => {
+    let marginBalance = 0
+    try {
+        const marginBase = await exchangeClient.bitfinexApiPost('v2/auth/r/info/margin/base')
+        marginBalance = marginBase[1][2].toFixed(2)
+    } catch (e) {
+        console.log(e)
+    }
+    return marginBalance
 }
