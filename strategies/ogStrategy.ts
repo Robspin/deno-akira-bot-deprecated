@@ -1,6 +1,13 @@
 import { config as env } from "https://deno.land/std@0.158.0/dotenv/mod.ts"
 import { BitfinexClient } from "../clients/bitfinex.ts"
-import { getStrategyInfo, getOpenPosition, getMarginBalance, createTimeString } from "./helpers.ts"
+import {
+    getStrategyInfo,
+    getOpenPosition,
+    getMarginBalance,
+    createTimeString,
+    calculateSizeInBTC,
+    openPosition, openStopLoss
+} from "./helpers.ts"
 
 export const VARIABLES = await env()
 
@@ -29,16 +36,18 @@ export const runStrategy = async () => {
     const risk = Number(VARIABLES.STRATEGY_RISK_PERCENTAGE) / 100
     const accountBalance = await getMarginBalance(exchangeClient)
     const sizeInDollars = Number((risk * accountBalance).toFixed(2))
+    const sizeInBTC = await calculateSizeInBTC(sizeInDollars)
+    const negativeSizeInBTC = String(Number(sizeInBTC) * -1)
 
     switch (signal) {
         case 'LONG':
-            // enter long position
-            // set stoploss
+            await openPosition(exchangeClient, sizeInBTC)
+            await openStopLoss(exchangeClient, negativeSizeInBTC, String(fractals.downFractals[0]))
             break
-        // case 'SHORT':
-        //     // enter short position
-        //     // set stoploss
-        //     break
+        case 'SHORT':
+            await openPosition(exchangeClient, negativeSizeInBTC)
+            await openStopLoss(exchangeClient, sizeInBTC, String(fractals.upFractals[0]))
+            break
     }
     console.log(`${createTimeString()}: entered ${signal.toLowerCase()} position...`)
 }

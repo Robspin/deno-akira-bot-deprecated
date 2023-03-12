@@ -36,3 +36,38 @@ export const getMarginBalance = async (exchangeClient: BitfinexInstance): Promis
     }
     return marginBalance
 }
+
+export const calculateSizeInBTC = async (sizeInDollars: number): Promise<string> => {
+    const tickerResponse = await (await fetch('https://api-pub.bitfinex.com/v2/tickers?symbols=tBTCUSD')).json()
+    const currentPrice = tickerResponse[0][1]
+    return String((sizeInDollars / currentPrice).toFixed(5))
+}
+
+export const openPosition = async (exchangeClient: BitfinexInstance, amount: string) => {
+    try {
+        const body = {
+            type: 'MARKET',
+            symbol: 'tBTCUSD',
+            amount
+        }
+
+        const response = await exchangeClient.bitfinexApiPost('v2/auth/w/order/submit', body)
+    } catch (e) {
+        console.log(e)
+    }
+}
+
+export const openStopLoss = async (exchangeClient: BitfinexInstance, amount: string, price: string) => {
+    try {
+        const body = {
+            type: 'STOP',
+            symbol: 'tBTCUSD',
+            price,
+            amount
+        }
+
+        const response = await exchangeClient.bitfinexApiPost('v2/auth/w/order/submit', body)
+    } catch (e) {
+        console.log(e)
+    }
+}

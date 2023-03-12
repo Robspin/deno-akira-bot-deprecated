@@ -13,6 +13,7 @@ export class BitfinexClient {
     public generateRequestHeaders(path: string, body = {}) {
         const nonce = (Date.now() * 1000).toString()
         const signature = `/api/${path}${nonce}${JSON.stringify(body)}`
+        console.log(signature)
         const encryptedSignature = CryptoJS.HmacSHA384(signature, this.apiSecret).toString()
 
         const headers = {
@@ -30,7 +31,7 @@ export class BitfinexClient {
             const config = {
                 method: 'POST',
                 body: JSON.stringify(body),
-                headers: this.generateRequestHeaders(path)
+                headers: this.generateRequestHeaders(path, body)
             }
 
             const data = await (await fetch(`${this.baseURL}${path}`, config)).json()
