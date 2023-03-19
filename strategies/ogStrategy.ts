@@ -6,7 +6,10 @@ import {
     getMarginBalance,
     createTimeString,
     calculateSizeInBTC,
-    openPosition, openStopLoss
+    openPosition,
+    openStopLoss,
+    akiraUpdateStatus,
+    akiraCheckAndUpdateStatus
 } from "./helpers.ts"
 
 export const VARIABLES = await env()
@@ -14,9 +17,7 @@ export const VARIABLES = await env()
 const exchangeClient = new BitfinexClient(VARIABLES.BITFINEX_API_KEY, VARIABLES.BITFINEX_API_SECRET)
 
 export const runStrategy = async () => {
-    const { fractals, signalDetails } = await getStrategyInfo()
-
-    const signal = 'LONG'
+    const { fractals, signal, signalDetails } = await getStrategyInfo()
 
     const hasOpenPosition = await getOpenPosition(exchangeClient)
 
@@ -24,10 +25,13 @@ export const runStrategy = async () => {
         console.log(`${createTimeString()}: has open position...`)
         // await exchange.checkAndMoveStopLoss(fractals)
         return
+    } else {
+        await akiraCheckAndUpdateStatus()
     }
 
-    if (!signal) {
+    if (typeof signal === 'boolean') {
         console.log(`${createTimeString()}: no signal...`)
+        console.log(signalDetails)
         return
     }
 
@@ -43,10 +47,12 @@ export const runStrategy = async () => {
         case 'LONG':
             await openPosition(exchangeClient, sizeInBTC)
             await openStopLoss(exchangeClient, negativeSizeInBTC, String(fractals.downFractals[0]))
+            await akiraUpdateStatus(true, 'LONG')
             break
         case 'SHORT':
             await openPosition(exchangeClient, negativeSizeInBTC)
             await openStopLoss(exchangeClient, sizeInBTC, String(fractals.upFractals[0]))
+            await akiraUpdateStatus(true, 'SHORT')
             break
     }
     console.log(`${createTimeString()}: entered ${signal.toLowerCase()} position...`)

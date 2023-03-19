@@ -71,3 +71,31 @@ export const openStopLoss = async (exchangeClient: BitfinexInstance, amount: str
         console.log(e)
     }
 }
+
+
+export const akiraUpdateStatus = async (hasPosition: boolean, direction: 'LONG' | 'SHORT' | 'NO_TRADE') => {
+    try {
+        const config = {
+            method: 'PUT',
+            body: JSON.stringify({ hasPosition, direction }),
+            headers: { 'Content-Type': 'application/json' }
+        }
+        const data = await (await fetch(`${VARIABLES.AKIRA_BACKEND_URL}/bot-status/${VARIABLES.STRATEGY_KEY}`, config)).json()
+        console.log('updated akira status')
+    } catch (e) {
+        console.log('error?', e)
+    }
+}
+
+export const akiraCheckAndUpdateStatus = async () => {
+    let hasPosition
+    try {
+        const data = await (await fetch(`${VARIABLES.AKIRA_BACKEND_URL}/bot-status/${VARIABLES.STRATEGY_KEY}`)).json()
+        hasPosition = data.data.hasPosition
+    } catch (e) {
+        console.log(e)
+    }
+
+    if (!hasPosition) return
+    await akiraUpdateStatus(false, "NO_TRADE")
+}
