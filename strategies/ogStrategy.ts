@@ -9,7 +9,7 @@ import {
     openPosition,
     openStopLoss,
     akiraUpdateStatus,
-    akiraCheckAndUpdateStatus
+    akiraCheckAndUpdateStatus, checkAndUpdateStopLoss
 } from "./helpers.ts"
 
 export const VARIABLES = await env()
@@ -23,7 +23,7 @@ export const runStrategy = async () => {
 
     if (hasOpenPosition) {
         console.log(`${createTimeString()}: has open position...`)
-        // await exchange.checkAndMoveStopLoss(fractals)
+        await checkAndUpdateStopLoss(exchangeClient, fractals)
         return
     } else {
         await akiraCheckAndUpdateStatus()

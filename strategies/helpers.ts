@@ -17,6 +17,7 @@ export const getOpenPosition = async (exchangeClient: BitfinexInstance): Promise
     let hasOpenPosition = false
     try {
         const positions: any[] = await exchangeClient.bitfinexApiPost('v2/auth/r/positions')
+        console.log(positions)
         if (positions.length > 0) hasOpenPosition = true
     } catch (e) {
         console.log(e)
@@ -72,6 +73,44 @@ export const openStopLoss = async (exchangeClient: BitfinexInstance, amount: str
     }
 }
 
+export const cancelOrder = async (exchangeClient: BitfinexInstance, id: number) => {
+    try {
+        const body = { id }
+        const response = await exchangeClient.bitfinexApiPost('v2/auth/w/order/cancel', body)
+        console.log('canceled stop...')
+    } catch (e) {
+        console.log(e)
+    }
+}
+
+export const checkAndUpdateStopLoss = async (exchangeClient: BitfinexInstance, fractals: any) => {
+    try {
+        const orders: any[] = await exchangeClient.bitfinexApiPost('v2/auth/r/orders')
+
+        const [id, _1, _2, pair, _4, _5, amount, _7, type, _9, _10, _11, _12, _13, _14, _15, price] = orders[0]
+
+        if (type !== 'STOP') {
+            console.log('something went wrong while updating stoploss')
+            return
+        }
+        const isLong = amount < 0
+        let fractalPrice
+
+        if (isLong) {
+            fractalPrice = Math.ceil(fractals.downFractals[0])
+        } else {
+            fractalPrice = Math.ceil(fractals.upFractals[0])
+        }
+        const newStop = price !== fractalPrice
+        if (!newStop) return
+        await cancelOrder(exchangeClient, id)
+        await openStopLoss(exchangeClient, amount, price)
+
+        console.log('updated stoploss...')
+    } catch (e) {
+        console.log(e)
+    }
+}
 
 export const akiraUpdateStatus = async (hasPosition: boolean, direction: 'LONG' | 'SHORT' | 'NO_TRADE') => {
     try {
