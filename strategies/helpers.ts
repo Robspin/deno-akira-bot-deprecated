@@ -17,7 +17,6 @@ export const getOpenPosition = async (exchangeClient: BitfinexInstance): Promise
     let hasOpenPosition = false
     try {
         const positions: any[] = await exchangeClient.bitfinexApiPost('v2/auth/r/positions')
-        console.log(positions)
         if (positions.length > 0) hasOpenPosition = true
     } catch (e) {
         console.log(e)
@@ -84,8 +83,19 @@ export const cancelOrder = async (exchangeClient: BitfinexInstance, id: number) 
 }
 
 export const checkAndUpdateStopLoss = async (exchangeClient: BitfinexInstance, fractals: any) => {
+    const getFractal = (isLong: boolean) => isLong ? Math.ceil(fractals.downFractals[0]) : Math.ceil(fractals.upFractals[0])
+
     try {
         const orders: any[] = await exchangeClient.bitfinexApiPost('v2/auth/r/orders')
+
+        if (orders.length === 0) {
+            const positions: any[] = await exchangeClient.bitfinexApiPost('v2/auth/r/positions')
+            const [_0, _1, amount] = positions[0]
+            const fractalPrice = getFractal(amount > 0)
+            await openStopLoss(exchangeClient, String(Number(amount) * -1), String(fractalPrice))
+            console.log('stoploss was missing, created stoploss...')
+            return
+        }
 
         const [id, _1, _2, pair, _4, _5, amount, _7, type, _9, _10, _11, _12, _13, _14, _15, price] = orders[0]
 
@@ -93,18 +103,12 @@ export const checkAndUpdateStopLoss = async (exchangeClient: BitfinexInstance, f
             console.log('something went wrong while updating stoploss')
             return
         }
-        const isLong = amount < 0
-        let fractalPrice
 
-        if (isLong) {
-            fractalPrice = Math.ceil(fractals.downFractals[0])
-        } else {
-            fractalPrice = Math.ceil(fractals.upFractals[0])
-        }
+        const fractalPrice = getFractal(amount < 0)
         const newStop = price !== fractalPrice
         if (!newStop) return
         await cancelOrder(exchangeClient, id)
-        await openStopLoss(exchangeClient, amount, price)
+        await openStopLoss(exchangeClient, String(Number(amount) * -1), String(price))
 
         console.log('updated stoploss...')
     } catch (e) {
